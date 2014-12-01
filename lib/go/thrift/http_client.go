@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+  "crypto/tls"
 )
 
 type THttpClient struct {
@@ -74,7 +75,13 @@ func NewTHttpClient(urlstr string) (TTransport, error) {
 	if err != nil {
 		return nil, err
 	}
-	response, err := http.Get(urlstr)
+
+  tr := &http.Transport{
+        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+  }
+	client := &http.Client{Transport: tr}
+
+	response, err := client.Get(urlstr)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +170,7 @@ func (p *THttpClient) Write(buf []byte) (int, error) {
 }
 
 func (p *THttpClient) WriteByte(c byte) error {
+  //fmt.Printf("RequestBuffer %v", p.requestBuffer)
 	return p.requestBuffer.WriteByte(c)
 }
 
@@ -171,7 +179,10 @@ func (p *THttpClient) WriteString(s string) (n int, err error) {
 }
 
 func (p *THttpClient) Flush() error {
-	client := &http.Client{}
+  tr := &http.Transport{
+        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+  }
+	client := &http.Client{Transport: tr}
 	req, err := http.NewRequest("POST", p.url.String(), p.requestBuffer)
 	if err != nil {
 		return NewTTransportExceptionFromError(err)
